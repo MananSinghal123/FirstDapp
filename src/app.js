@@ -1,6 +1,7 @@
 App = {
   loading: false,
   contracts: {},
+
   load: async () => {
     await App.loadWeb3();
     await App.loadAccount();
@@ -8,6 +9,7 @@ App = {
     await App.render();
   },
 
+  // https://medium.com/metamask/https-medium-com-metamask-breaking-change-injecting-web3-7722797916a8
   loadWeb3: async () => {
     if (typeof web3 !== "undefined") {
       App.web3Provider = web3.currentProvider;
@@ -45,37 +47,48 @@ App = {
       );
     }
   },
+
   loadAccount: async () => {
+    // Set the current blockchain account
     App.account = web3.eth.accounts[0];
   },
 
   loadContract: async () => {
+    // Create a JavaScript version of the smart contract
     const todoList = await $.getJSON("TodoList.json");
     App.contracts.TodoList = TruffleContract(todoList);
     App.contracts.TodoList.setProvider(App.web3Provider);
 
+    // Hydrate the smart contract with values from the blockchain
     App.todoList = await App.contracts.TodoList.deployed();
   },
+
   render: async () => {
+    // Prevent double render
     if (App.loading) {
       return;
     }
 
+    // Update app loading state
     App.setLoading(true);
 
+    // Render Account
     $("#account").html(App.account);
 
+    // Render Tasks
     await App.renderTasks();
 
+    // Update loading state
     App.setLoading(false);
   },
 
   renderTasks: async () => {
-    //Load the total task count from the blockchain
+    // Load the total task count from the blockchain
     const taskCount = await App.todoList.taskCount();
     const $taskTemplate = $(".taskTemplate");
 
-    for (var i = 1; i <= taskCount; i++) {
+    // Render out each task with a new task template
+    for (let i = 1; i <= taskCount; i++) {
       // Fetch the task data from the blockchain
       const task = await App.todoList.tasks(i);
       const taskId = task[0].toNumber();
